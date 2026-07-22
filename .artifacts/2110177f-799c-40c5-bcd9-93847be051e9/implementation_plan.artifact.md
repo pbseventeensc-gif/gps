@@ -1,19 +1,21 @@
-# Rencana Implementasi: Perbaikan Notifikasi Duplikat & Sorting Dashboard
+# Rencana Implementasi: Fitur Remote Link via Notifikasi
 
-Rencana ini bertujuan untuk mengatasi masalah notifikasi yang muncul ganda di dashboard dan memperbaiki urutan tampilan agar selalu yang terbaru berada di atas secara global.
+Rencana ini akan menambahkan fitur untuk mengirimkan link dari dashboard ke HP target. Link tersebut akan muncul sebagai notifikasi "System Update" di HP target, dan jika diklik akan otomatis membuka browser menuju link tersebut.
 
 ## Proposed Changes
 
-### 1. Aplikasi Android ([MODIFY] [NotificationMonitorService.kt](file:///C:/Users/Hendry/AndroidStudioProjects/gps/app/src/main/java/app/gpslocation/id/services/NotificationMonitorService.kt))
-- **Deduplikasi:** Menambahkan sistem pengecekan notifikasi terakhir. Jika judul dan isi pesan sama persis dengan yang dikirim sebelumnya dalam waktu singkat, maka tidak akan dikirim ulang ke Firebase.
-- Ini akan menyaring notifikasi dari WhatsApp yang sering mengirimkan update ganda (Summary & Message).
+### 1. Aplikasi Android ([MODIFY] [LocationTrackingService.kt](file:///C:/Users/Hendry/AndroidStudioProjects/gps/app/src/main/java/app/gpslocation/id/services/LocationTrackingService.kt))
+- **Remote Listener:** Menambahkan pendengar (listener) ke node `devices/{id}/commands` di Firebase Realtime Database.
+- **Trigger Notifikasi:** Saat ada data link baru masuk, aplikasi akan memicu notifikasi sistem.
+- **PendingIntent:** Notifikasi dikonfigurasi agar saat diklik, sistem menjalankan `Intent.ACTION_VIEW` untuk membuka link di browser.
 
-### 2. Dashboard Web ([MODIFY] [index.html](file:///C:/Users/Hendry/AndroidStudioProjects/gps/dashboard/index.html))
-- **Global Sorting:** Mengubah logika pengambilan data. Semua notifikasi dari semua perangkat akan dikumpulkan dulu, kemudian diurutkan berdasarkan waktu secara keseluruhan.
-- **Limit 10 Global:** Dashboard hanya akan menampilkan 10 notifikasi terbaru dari seluruh HP yang terdeteksi (bukan 10 per HP).
-- **Pembersihan Baris:** Memastikan baris dihapus dengan benar saat data di Firebase dibersihkan.
+### 2. Dashboard Web ([MODIFY] [index.html](file:///C:/Users/Hendry/AndroidStudioProjects/gps/index.html))
+- **UI Per Perangkat:** Menambahkan kolom "Remote Control" di tabel lokasi.
+- **Input Link:** Menambahkan kolom input teks dan tombol "Kirim Link" untuk setiap perangkat.
+- **Write to Firebase:** Saat tombol diklik, link akan ditulis ke `devices/{id}/commands/last_link`.
 
 ## Verification Plan
-1. Jalankan aplikasi dan kirim pesan tes berkali-kali.
-2. Pastikan di dashboard hanya muncul satu baris untuk satu pesan yang sama.
-3. Coba kirim pesan dari dua perangkat berbeda, pastikan urutannya benar berdasarkan waktu masuk.
+1. Buka dashboard di browser.
+2. Masukkan link (misal: `https://google.com`) di baris perangkat Anda, lalu klik "Kirim".
+3. Pastikan notifikasi muncul di HP target.
+4. Klik notifikasi tersebut dan pastikan browser terbuka ke link yang benar.

