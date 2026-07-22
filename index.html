@@ -15,30 +15,42 @@
 
         /* Table Container for Freeze Panel / Sticky Header */
         .table-wrapper {
-            max-height: 400px;
+            max-height: 450px;
             overflow-y: auto;
             overflow-x: auto;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             margin-bottom: 20px;
+            border: 1px solid #ddd;
         }
 
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        table {
+            width: 100%;
+            border-collapse: separate; /* Required for solid sticky header */
+            border-spacing: 0;
+            min-width: 700px;
+        }
 
-        /* Freeze Header Logic */
+        /* Freeze Header Logic - Solid & Reliable */
         th {
             position: sticky;
             top: 0;
-            background-color: #28a745;
+            background-color: #28a745 !important;
             color: white;
-            z-index: 10;
-            padding: 12px;
+            z-index: 20;
+            padding: 15px 12px;
             text-align: left;
-            border-bottom: 2px solid #1e7e34;
+            border-bottom: 3px solid #1e7e34;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Floating effect */
         }
 
-        td { border-bottom: 1px solid #ddd; padding: 12px; text-align: left; }
+        td {
+            border-bottom: 1px solid #eee;
+            padding: 12px;
+            text-align: left;
+            background-color: white;
+        }
         tr:nth-child(even) { background-color: #f9f9f9; }
         tr:hover { background-color: #f1f1f1; }
 
