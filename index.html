@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Device GPS Tracker (Optimized)</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f4f9; margin: 0; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h1 { color: #333; margin: 0; }
+        #map { width: 100%; height: 500px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); margin-bottom: 30px; }
+        .container { max-width: 1200px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #28a745; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+        .section { margin-bottom: 40px; }
+        .address-text { font-size: 0.9em; color: #555; font-style: italic; }
+        .status-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; background: #007bff; color: white; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-delete:hover { background: #c82333; }
+        .btn-clear-all { background: #343a40; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+        .btn-clear-all:hover { background: #23272b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GPS Tracker - Multi Device</h1>
+            <button class="btn-clear-all" id="btn-clear-all">Hapus Semua Data Database</button>
+        </div>
+
+        <div id="map"></div>
+
+        <div class="section">
+            <h2>Daftar Perangkat & Lokasi Terakhir</h2>
+            <table id="location-table">
+                <thead>
+                    <tr>
+                        <th>Merk / Model HP</th>
+                        <th>Status</th>
+                        <th>Akurasi</th>
+                        <th>Alamat / Nama Jalan</th>
+                        <th>Waktu</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="header">
+                <h2>Log Notifikasi (10 Terbaru Global)</h2>
+                <button class="btn-clear-all" id="btn-clear-notif" style="background: #6c757d;">Hapus Semua Log Notifikasi</button>
+            </div>
+            <table id="notification-table">
+                <thead>
+                    <tr>
+                        <th>Merk HP</th>
+                        <th>App</th>
+                        <th>Title & Content</th>
+                        <th>Waktu</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbgFpi0FSEGrezBkircI3kUPjkgxs5mo4",
+            authDomain: "gps-locator-956fb.firebaseapp.com",
+            databaseURL: "https://gps-locator-956fb-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "gps-locator-956fb",
+            storageBucket: "gps-locator-956fb.firebasestorage.app",
+            messagingSenderId: "199650829901",
+            appId: "1:199650829901:android:b99439f65cf4aed4b2de04"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let map;
+        let markers = {};
+        const addressCache = {};
+
+        function initMap() {
+            map = L.map('map').setView([-6.2088, 106.8456], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        async function getAddress(lat, lng) {
+            const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+            if (addressCache[key]) return addressCache[key];
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+                const data = await response.json();
+                const address = data.display_name || "Alamat tidak ditemukan";
+                addressCache[key] = address;
+                return address;
+            } catch (e) {
+                return "Gagal mengambil alamat";
+            }
+        }
+
+        function updateMarker(deviceId, lat, lng, name) {
+            const pos = [lat, lng];
+            if (markers[deviceId]) {
+                markers[deviceId].setLatLng(pos);
+            } else {
+                markers[deviceId] = L.marker(pos).addTo(map)
+                    .bindPopup(`<strong>Device:</strong> ${name}`);
+            }
+
+            const allMarkers = Object.values(markers).map(m => m.getLatLng());
+            if (allMarkers.length > 1) {
+                map.fitBounds(L.latLngBounds(allMarkers), { padding: [50, 50] });
+            } else {
+                map.setView(pos, 15);
+            }
+        }
+
+        window.deleteDevice = function(deviceId) {
+            if (confirm(`Apakah Anda yakin ingin menghapus semua data untuk perangkat ${deviceId}?`)) {
+                remove(ref(db, `devices/${deviceId}`));
+            }
+        };
+
+        window.deleteNotification = function(deviceId, notifId) {
+            if (confirm("Hapus notifikasi ini?")) {
+                remove(ref(db, `devices/${deviceId}/notifications/${notifId}`));
+            }
+        };
+
+        document.getElementById("btn-clear-all").onclick = function() {
+            if (confirm("PERINGATAN: Ini akan menghapus SELURUH data di database. Lanjutkan?")) {
+                remove(ref(db, 'devices'));
+            }
+        };
+
+        document.getElementById("btn-clear-notif").onclick = function() {
+            if (confirm("Hapus seluruh log notifikasi dari semua perangkat?")) {
+                onValue(ref(db, 'devices'), (snapshot) => {
+                    const devices = snapshot.val();
+                    for (let deviceId in devices) {
+                        remove(ref(db, `devices/${deviceId}/notifications`));
+                    }
+                }, { onlyOnce: true });
+            }
+        };
+
+        initMap();
+
+        const devicesRef = ref(db, 'devices');
+        onValue(devicesRef, async (snapshot) => {
+            const devices = snapshot.val();
+            const locBody = document.querySelector("#location-table tbody");
+            const notifBody = document.querySelector("#notification-table tbody");
+
+            if (!devices) {
+                locBody.innerHTML = "";
+                notifBody.innerHTML = "";
+                Object.values(markers).forEach(m => map.removeLayer(m));
+                markers = {};
+                return;
+            }
+
+            // --- PROSES LOKASI ---
+            // Hapus baris yang perangkatnya sudah tidak ada di DB
+            const existingRows = Array.from(locBody.rows).map(r => r.id.replace('row-loc-', ''));
+            existingRows.forEach(id => { if(!devices[id]) document.getElementById(`row-loc-${id}`).remove(); });
+
+            for (let deviceId in devices) {
+                const deviceData = devices[deviceId];
+                const deviceDisplayName = deviceData.info?.name || deviceId;
+
+                if (deviceData.locations) {
+                    const locKeys = Object.keys(deviceData.locations);
+                    const lastLoc = deviceData.locations[locKeys[locKeys.length - 1]];
+
+                    updateMarker(deviceId, lastLoc.latitude, lastLoc.longitude, deviceDisplayName);
+
+                    let row = document.getElementById(`row-loc-${deviceId}`);
+                    if (!row) {
+                        row = locBody.insertRow();
+                        row.id = `row-loc-${deviceId}`;
+                        for(let i=0; i<6; i++) row.insertCell();
+                    }
+
+                    const address = await getAddress(lastLoc.latitude, lastLoc.longitude);
+                    row.cells[0].innerHTML = `<strong>${deviceDisplayName}</strong><br><small>${deviceId}</small>`;
+                    row.cells[1].innerHTML = '<span class="status-tag">Aktif</span>';
+                    row.cells[2].innerText = lastLoc.accuracy.toFixed(1) + "m";
+                    row.cells[3].innerHTML = `<span class="address-text">${address}</span>`;
+                    row.cells[4].innerText = new Date(lastLoc.timestamp).toLocaleString();
+                    row.cells[5].innerHTML = `<button class="btn-delete" onclick="deleteDevice('${deviceId}')">Hapus</button>`;
+                }
+            }
+
+            // --- PROSES NOTIFIKASI (GLOBAL SORTING) ---
+            let allNotifs = [];
+            for (let deviceId in devices) {
+                const deviceData = devices[deviceId];
+                const deviceDisplayName = deviceData.info?.name || deviceId;
+                if (deviceData.notifications) {
+                    Object.keys(deviceData.notifications).forEach(notifId => {
+                        allNotifs.push({
+                            id: notifId,
+                            deviceId: deviceId,
+                            deviceName: deviceDisplayName,
+                            ...deviceData.notifications[notifId]
+                        });
+                    });
+                }
+            }
+
+            // Urutkan berdasarkan receivedAt terbaru
+            allNotifs.sort((a, b) => b.receivedAt - a.receivedAt);
+
+            // Ambil 10 teratas
+            const latestNotifs = allNotifs.slice(0, 10);
+
+            notifBody.innerHTML = ""; // Refresh total untuk sorting yang benar
+            latestNotifs.forEach(notif => {
+                const row = notifBody.insertRow();
+                row.insertCell(0).innerText = notif.deviceName;
+                row.insertCell(1).innerText = notif.package.split('.').pop();
+                row.insertCell(2).innerHTML = `<strong>${notif.title}</strong><br>${notif.text}`;
+                row.insertCell(3).innerText = new Date(notif.receivedAt).toLocaleTimeString();
+                row.insertCell(4).innerHTML = `<button class="btn-delete" onclick="deleteNotification('${notif.deviceId}', '${notif.id}')">Hapus</button>`;
+            });
+        });
+    </script>
+</body>
+</html>

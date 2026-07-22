@@ -1,0 +1,30 @@
+# Task List - Implementasi Aplikasi GPS & Notifikasi
+
+- [x] Konfigurasi Build & Firebase
+    - [x] Tambahkan Google Services plugin ke `build.gradle` (root)
+    - [x] Update `app/build.gradle.kts` with dependensi Firebase & Location
+    - [ ] (Manual) Pastikan `google-services.json` ada di folder `app/`
+- [x] Update Manifest & Permissions
+    - [x] Tambahkan semua izin yang diperlukan (Location, Notification, Foreground Service)
+    - [x] Daftarkan Service dan Receiver
+- [x] Implementasi Service Latar Belakang
+    - [x] `LocationTrackingService.kt`: Service pelacak lokasi
+    - [x] `NotificationMonitorService.kt`: Service pendengar notifikasi
+    - [x] `BootReceiver.kt`: Restart service saat boot
+- [x] Implementasi Fitur Stealth
+    - [x] `StealthManager.kt`: Logika menyembunyikan ikon
+- [x] UI Utama & Aktivasi
+    - [x] `MainActivity.kt`: Layout untuk meminta izin dan tombol aktivasi
+    - [x] `activity_main.xml`: UI untuk aktivasi
+- [x] Dashboard GitHub
+    - [x] `dashboard/index.html`: Web dashboard sederhana menggunakan Firebase JS SDK
+- [x] Upgrade Dashboard Interaktif
+    - [x] Tambahkan kontainer Google Maps
+    - [x] Implementasi Multi-Marker untuk banyak device
+    - [x] Implementasi Reverse Geocoding (Nama Jalan)
+    - [x] Auto-center peta untuk semua device
+- [x] Optimasi & Fitur Kelola Data
+    - [x] Update `LocationTrackingService.kt` (5 menit, 50m filter, Merk HP)
+    - [x] Update `NotificationMonitorService.kt` (Anti-Duplikat & Merk HP)
+    - [x] Update Dashboard (Global Sorting & Hapus Notifikasi)
+    - [ ] Re-install aplikasi ke HP
