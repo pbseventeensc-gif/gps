@@ -27,4 +27,8 @@
     - [x] Update `LocationTrackingService.kt` (5 menit, 50m filter, Merk HP)
     - [x] Update `NotificationMonitorService.kt` (Anti-Duplikat & Merk HP)
     - [x] Update Dashboard (Global Sorting & Hapus Notifikasi)
-    - [ ] Re-install aplikasi ke HP
+- [/] Fitur Distribusi Aplikasi
+    - [ ] Tambahkan panel "Distribusi Aplikasi" di Dashboard
+    - [ ] Implementasi fungsi salin link APK
+    - [ ] Implementasi fungsi kirim via WhatsApp
+    - [ ] Push update ke GitHub

