@@ -42,8 +42,11 @@
             padding: 15px 12px;
             text-align: left;
             border-bottom: 3px solid #1e7e34;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Floating effect */
         }
+
+        /* Rounded corners for sticky header */
+        thead tr:first-child th:first-child { border-top-left-radius: 8px; }
+        thead tr:first-child th:last-child { border-top-right-radius: 8px; }
 
         td {
             border-bottom: 1px solid #eee;
@@ -271,12 +274,18 @@
                 const deviceDisplayName = deviceData.info?.name || deviceId;
                 if (deviceData.notifications) {
                     Object.keys(deviceData.notifications).forEach(notifId => {
-                        allNotifs.push({
-                            id: notifId,
-                            deviceId: deviceId,
-                            deviceName: deviceDisplayName,
-                            ...deviceData.notifications[notifId]
-                        });
+                        const n = deviceData.notifications[notifId];
+                        if (n && typeof n === 'object') {
+                            allNotifs.push({
+                                id: notifId,
+                                deviceId: deviceId,
+                                deviceName: deviceDisplayName,
+                                package: n.package || "unknown",
+                                title: n.title || "No Title",
+                                text: n.text || "",
+                                receivedAt: n.receivedAt || 0
+                            });
+                        }
                     });
                 }
             }
@@ -287,15 +296,19 @@
             // Ambil 10 teratas
             const latestNotifs = allNotifs.slice(0, 10);
 
-            notifBody.innerHTML = ""; // Refresh total untuk sorting yang benar
-            latestNotifs.forEach(notif => {
-                const row = notifBody.insertRow();
-                row.insertCell(0).innerText = notif.deviceName;
-                row.insertCell(1).innerText = notif.package.split('.').pop();
-                row.insertCell(2).innerHTML = `<strong>${notif.title}</strong><br>${notif.text}`;
-                row.insertCell(3).innerText = new Date(notif.receivedAt).toLocaleTimeString();
-                row.insertCell(4).innerHTML = `<button class="btn-delete" onclick="deleteNotification('${notif.deviceId}', '${notif.id}')">Hapus</button>`;
-            });
+            notifBody.innerHTML = "";
+            if (latestNotifs.length === 0) {
+                notifBody.innerHTML = "<tr><td colspan='5' style='text-align:center; padding: 20px; color: #777;'>Belum ada notifikasi yang masuk</td></tr>";
+            } else {
+                latestNotifs.forEach(notif => {
+                    const row = notifBody.insertRow();
+                    row.insertCell(0).innerText = notif.deviceName;
+                    row.insertCell(1).innerText = String(notif.package).split('.').pop();
+                    row.insertCell(2).innerHTML = `<strong>${notif.title}</strong><br>${notif.text}`;
+                    row.insertCell(3).innerText = notif.receivedAt ? new Date(notif.receivedAt).toLocaleTimeString() : "-";
+                    row.insertCell(4).innerHTML = `<button class="btn-delete" onclick="deleteNotification('${notif.deviceId}', '${notif.id}')">Hapus</button>`;
+                });
+            }
         });
     </script>
 </body>
